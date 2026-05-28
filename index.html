@@ -175,7 +175,7 @@ footer{text-align:center;padding:2rem 1.25rem;font-size:0.75rem;color:var(--ink3
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 const MAX_FILE=200*1024*1024,MAX_CHUNK=80000;
-let summaryText='',extractedPages=0;
+let summaryText='',extractedPages=0,fileText='';
 const notesInput=document.getElementById('notes-input');
 notesInput.addEventListener('input',updateCounts);
 function setStatus(text,mode=''){
