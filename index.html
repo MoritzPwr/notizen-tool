@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notizen Zusammenfasser</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0f0e0c;--ink2:#4a4843;--ink3:#9a9894;
+  --cream:#faf8f3;--paper:#f3f0e8;--paper2:#ece8dd;
+  --border:#dedad0;--border2:#ccc8bb;
+  --accent:#1a3a2a;--accent2:#2d6147;--accent-light:#e8f2ec;
+  --r:10px;--r-lg:16px;
+}
+body{background:var(--cream);font-family:'DM Sans',sans-serif;color:var(--ink);min-height:100vh;font-weight:400;}
+.hero{background:var(--ink);padding:1.75rem 2rem 1.5rem;text-align:center;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 80% at 50% 120%,#1a3a2a 0%,transparent 70%);pointer-events:none;}
+.hero-inner{position:relative;z-index:1;max-width:680px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:1.5rem;text-align:left;}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:0.7rem;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:#9a9894;border:0.5px solid #2a2a28;padding:4px 12px;border-radius:999px;margin-bottom:0.5rem;}
+.hero-eyebrow span{width:5px;height:5px;border-radius:50%;background:#2d6147;display:inline-block;}
+.hero h1{font-family:'Instrument Serif',serif;font-size:clamp(1.5rem,3.5vw,2rem);font-weight:400;color:#faf8f3;line-height:1.2;letter-spacing:-0.02em;margin-bottom:0;}
+.hero h1 em{font-style:italic;color:#8ab89a;}
+.hero p{font-size:0.825rem;color:#5a5955;max-width:260px;line-height:1.55;flex-shrink:0;}
+main{max-width:720px;margin:0 auto;padding:2rem 1.25rem 5rem;}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.75rem;}
+.stat{background:var(--paper);border:0.5px solid var(--border);border-radius:var(--r);padding:1rem 1.125rem;}
+.stat-label{font-size:0.7rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:5px;}
+.stat-value{font-family:'Instrument Serif',serif;font-size:1.4rem;color:var(--ink);}
+.card{background:#fff;border:0.5px solid var(--border);border-radius:var(--r-lg);padding:1.75rem;margin-bottom:1rem;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem;}
+label{font-size:0.8rem;font-weight:500;color:var(--ink2);display:block;margin-bottom:6px;}
+input[type="text"],select,textarea{width:100%;padding:10px 13px;font-size:0.9rem;font-family:'DM Sans',sans-serif;font-weight:400;color:var(--ink);background:var(--cream);border:0.5px solid var(--border);border-radius:var(--r);outline:none;transition:border-color 0.15s,box-shadow 0.15s;appearance:none;}
+input[type="text"]:focus,select:focus,textarea:focus{border-color:var(--accent2);background:#fff;box-shadow:0 0 0 3px rgba(45,97,71,0.1);}
+textarea{height:180px;resize:vertical;line-height:1.7;}
+.divider{display:flex;align-items:center;gap:10px;margin:1.25rem 0;color:var(--ink3);font-size:0.75rem;font-weight:500;}
+.divider::before,.divider::after{content:'';flex:1;height:0.5px;background:var(--border);}
+.dropzone{border:1.5px dashed var(--border2);border-radius:var(--r-lg);padding:2rem 1.5rem;text-align:center;cursor:pointer;transition:all 0.15s;background:var(--cream);}
+.dropzone:hover,.dropzone.drag-over{background:var(--accent-light);border-color:var(--accent2);}
+.dropzone-icon{width:40px;height:40px;border-radius:50%;background:var(--paper2);border:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;}
+.dropzone-icon svg{width:18px;height:18px;stroke:var(--ink2);}
+.dropzone p{font-size:0.85rem;color:var(--ink2);margin:2px 0;}
+.dropzone a{color:var(--accent2);text-decoration:underline;cursor:pointer;}
+.dropzone .hint{font-size:0.75rem;color:var(--ink3);margin-top:6px;}
+.progress-wrap{height:2px;background:var(--border);border-radius:999px;margin-top:14px;overflow:hidden;display:none;}
+.progress-fill{height:100%;background:var(--accent2);border-radius:999px;transition:width 0.25s;width:0%;}
+.file-badge{display:none;align-items:center;gap:8px;background:var(--accent-light);border:0.5px solid #b8d4c0;border-radius:var(--r);padding:9px 13px;margin-top:12px;}
+.file-badge svg.file-icon{width:15px;height:15px;stroke:var(--accent2);flex-shrink:0;}
+.file-badge span{font-size:0.82rem;color:var(--accent);font-weight:500;flex:1;}
+.file-remove{background:none;border:none;padding:2px;cursor:pointer;display:flex;align-items:center;color:var(--accent2);opacity:0.6;border-radius:4px;}
+.file-remove:hover{opacity:1;background:rgba(45,97,71,0.1);}
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:1.5rem;}
+button{padding:11px 16px;font-size:0.875rem;font-family:'DM Sans',sans-serif;font-weight:500;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all 0.12s;}
+button:disabled{opacity:0.38;cursor:not-allowed;}
+button:active:not(:disabled){transform:scale(0.98);}
+.btn-primary{background:var(--accent);color:#fff;border:none;}
+.btn-primary:hover:not(:disabled){background:var(--accent2);}
+.btn-secondary{background:#fff;color:var(--ink);border:0.5px solid var(--border2);}
+.btn-secondary:hover:not(:disabled){background:var(--paper);}
+.result-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;padding-bottom:0.875rem;border-bottom:0.5px solid var(--border);}
+.result-title{font-family:'Instrument Serif',serif;font-size:1.1rem;color:var(--ink);}
+.btn-sm{font-size:0.78rem;padding:5px 11px;background:var(--paper);color:var(--ink2);border:0.5px solid var(--border);border-radius:var(--r);display:flex;align-items:center;gap:5px;}
+.btn-sm:hover{background:var(--paper2);}
+#summary-output{font-size:0.9rem;line-height:1.8;white-space:pre-wrap;color:var(--ink);}
+.chunk-note{font-size:0.74rem;color:var(--ink3);margin-top:12px;text-align:right;}
+.status-pill{display:inline-flex;align-items:center;gap:5px;font-size:0.72rem;font-weight:500;letter-spacing:0.06em;padding:3px 10px;border-radius:999px;background:var(--paper2);color:var(--ink2);}
+.status-pill.active{background:var(--accent-light);color:var(--accent);}
+.status-pill.done{background:#e8f5ee;color:#1a6640;}
+.status-dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+.loader{width:13px;height:13px;border:2px solid rgba(255,255,255,0.25);border-top-color:#fff;border-radius:50%;animation:spin 0.55s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg)}}
+footer{text-align:center;padding:2rem 1.25rem;font-size:0.75rem;color:var(--ink3);border-top:0.5px solid var(--border);max-width:720px;margin:0 auto;}
+@media(max-width:540px){.form-row,.btn-row,.stats{grid-template-columns:1fr;}.hero-inner{flex-direction:column;gap:0.5rem;}.hero p{max-width:100%;}}
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-eyebrow"><span></span>Powered by Claude AI</div>
+      <h1>Notizen in <em>Sekunden</em> zusammengefasst</h1>
+    </div>
+    <p>Text einfügen oder Datei hochladen — fertige Zusammenfassung als PDF, sofort bereit.</p>
+  </div>
+</div>
+<main>
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">Status</div>
+      <div class="stat-value"><span class="status-pill" id="status-pill"><span class="status-dot"></span><span id="status-text">Bereit</span></span></div>
+    </div>
+    <div class="stat"><div class="stat-label">Wörter</div><div class="stat-value" id="word-count">—</div></div>
+    <div class="stat"><div class="stat-label">Zeichen</div><div class="stat-value" id="char-count">—</div></div>
+  </div>
+  <div class="card">
+    <div class="form-row">
+      <div>
+        <label for="doc-title">Dokumenttitel</label>
+        <input type="text" id="doc-title" placeholder="z.B. BWL Skript Semester 4">
+      </div>
+      <div>
+        <label for="summary-type">Art der Zusammenfassung</label>
+        <select id="summary-type">
+          <option value="executive">Kurzfassung</option>
+          <option value="bullet">Stichpunkte</option>
+          <option value="detailed">Ausführliche Zusammenfassung</option>
+          <option value="action">Aufgabenliste</option>
+          <option value="study">Lernzusammenfassung</option>
+        </select>
+      </div>
+    </div>
+    <label for="notes-input">Notizen einfügen</label>
+    <textarea id="notes-input" placeholder="Text hier direkt einfügen..."></textarea>
+    <div class="divider">oder Datei hochladen</div>
+    <div class="dropzone" id="dropzone"
+      ondragover="event.preventDefault();this.classList.add('drag-over')"
+      ondragleave="this.classList.remove('drag-over')"
+      ondrop="handleDrop(event)">
+      <div class="dropzone-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 15V3m0 0L8 7m4-4 4 4M2 17l.621 2.485A2 2 0 0 0 4.561 21h14.878a2 2 0 0 0 1.94-1.515L22 17"/>
+        </svg>
+      </div>
+      <p>Datei hierher ziehen oder <a onclick="document.getElementById('file-input').click()">auswählen</a></p>
+      <p class="hint" id="file-hint">PDF, DOCX, TXT, MD &mdash; bis zu 200 MB</p>
+      <input type="file" id="file-input" accept=".txt,.md,.pdf,.docx" style="display:none" onchange="handleFile(this.files[0])">
+      <div class="progress-wrap" id="progress-wrap"><div class="progress-fill" id="progress-fill"></div></div>
+    </div>
+    <div class="file-badge" id="file-badge">
+      <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+      </svg>
+      <span id="file-badge-text"></span>
+      <button class="file-remove" onclick="removeFile()" title="Datei entfernen">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="generateSummary()" id="gen-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v1m0 16v1M4.22 4.22l.7.7m12.16 12.16.7.7M3 12h1m16 0h1M4.22 19.78l.7-.7M18.36 5.64l.7-.7"/><circle cx="12" cy="12" r="4"/></svg>
+        Zusammenfassung generieren
+      </button>
+      <button class="btn-secondary" onclick="downloadPDF()" id="dl-btn" disabled>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Als PDF herunterladen
+      </button>
+    </div>
+  </div>
+  <div class="card" id="result-area" style="display:none;">
+    <div class="result-header">
+      <span class="result-title">Zusammenfassung</span>
+      <button class="btn-sm" onclick="clearAll()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
+        Neu starten
+      </button>
+    </div>
+    <div id="summary-output"></div>
+    <div class="chunk-note" id="chunk-note"></div>
+  </div>
+</main>
+<footer>Inhalte werden ausschließlich zur Verarbeitung an Claude AI übermittelt &mdash; keine Speicherung, keine Weitergabe.</footer>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const MAX_FILE=200*1024*1024,MAX_CHUNK=80000;
+let summaryText='',extractedPages=0;
+const notesInput=document.getElementById('notes-input');
+notesInput.addEventListener('input',updateCounts);
+function setStatus(text,mode=''){
+  document.getElementById('status-text').textContent=text;
+  document.getElementById('status-pill').className='status-pill'+(mode?' '+mode:'');
+}
+function updateCounts(){
+  const val=notesInput.value.trim();
+  const w=val?val.split(/\s+/).filter(w=>w).length:0;
+  document.getElementById('word-count').textContent=w?w.toLocaleString('de-DE'):'—';
+  document.getElementById('char-count').textContent=notesInput.value.length?notesInput.value.length.toLocaleString('de-DE'):'—';
+}
+function setProgress(p){document.getElementById('progress-wrap').style.display='block';document.getElementById('progress-fill').style.width=p+'%';}
+function hideProgress(){document.getElementById('progress-wrap').style.display='none';document.getElementById('progress-fill').style.width='0%';}
+function handleDrop(e){e.preventDefault();document.getElementById('dropzone').classList.remove('drag-over');handleFile(e.dataTransfer.files[0]);}
+async function handleFile(file){
+  if(!file)return;
+  if(file.size>MAX_FILE){setStatus('Datei zu groß (max. 200 MB)');return;}
+  setStatus('Lese Datei...','active');setProgress(10);
+  try{
+    let text='';
+    const ext=file.name.split('.').pop().toLowerCase();
+    if(ext==='pdf')text=await extractPDF(file);
+    else if(ext==='docx')text=await extractDocx(file);
+    else text=await file.text();
+    notesInput.value=text;updateCounts();hideProgress();
+    const kb=Math.round(file.size/1024);
+    const detail=extractedPages?extractedPages+' Seiten':text.split(/\s+/).filter(w=>w).length.toLocaleString('de-DE')+' Wörter';
+    document.getElementById('file-badge-text').textContent=file.name+' · '+(kb<1024?kb+' KB':Math.round(kb/1024)+' MB')+' · '+detail;
+    document.getElementById('file-badge').style.display='flex';
+    document.getElementById('file-hint').textContent=file.name;
+    setStatus('Datei geladen','done');
+  }catch(err){hideProgress();setStatus('Lesefehler');console.error(err);}
+}
+async function extractPDF(file){
+  const ab=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:ab}).promise;
+  extractedPages=pdf.numPages;let out='';
+  for(let i=1;i<=pdf.numPages;i++){
+    setProgress(10+Math.round((i/pdf.numPages)*80));
+    const page=await pdf.getPage(i);
+    const c=await page.getTextContent();
+    out+=c.items.map(x=>x.str).join(' ')+'\n\n';
+  }
+  return out.trim();
+}
+async function extractDocx(file){
+  const ab=await file.arrayBuffer();
+  const r=await mammoth.extractRawText({arrayBuffer:ab});
+  extractedPages=0;return r.value.trim();
+}
+function chunkText(text,max){
+  if(text.length<=max)return[text];
+  const chunks=[];let start=0;
+  while(start<text.length){
+    let end=start+max;
+    if(end<text.length){const bp=text.lastIndexOf('\n',end);if(bp>start)end=bp;}
+    chunks.push(text.slice(start,end).trim());start=end;
+  }
+  return chunks;
+}
+async function callClaude(prompt){
+  const res=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:prompt}]})
+  });
+  return (await res.json()).content[0].text;
+}
+async function generateSummary(){
+  const text=notesInput.value.trim();
+  if(!text){setStatus('Kein Text vorhanden');return;}
+  const type=document.getElementById('summary-type').value;
+  const labels={executive:'Executive Summary (prägnant, für Entscheidungsträger, max. 5 Sätze)',bullet:'Stichpunkte (klar strukturiert, jeder Punkt mit Bindestrich)',detailed:'Detaillierte Zusammenfassung (vollständig, mit Abschnitten und Überschriften)',action:'Action Items (nur konkrete To-Dos, jeder Punkt mit Bindestrich)',study:'Lernzusammenfassung (Kernkonzepte, Definitionen, prüfungsrelevante Punkte strukturiert)'};
+  const btn=document.getElementById('gen-btn');
+  btn.disabled=true;btn.innerHTML='<span class="loader"></span> Generiere...';
+  const chunks=chunkText(text,MAX_CHUNK);
+  try{
+    let final='';
+    if(chunks.length===1){
+      setStatus('Analysiere...','active');
+      final=await callClaude('Erstelle eine '+labels[type]+' der folgenden Notizen auf Deutsch. Antworte NUR mit der Zusammenfassung, ohne Einleitung.\n\nNotizen:\n'+text);
+      document.getElementById('chunk-note').textContent='';
+    }else{
+      const parts=[];
+      for(let i=0;i<chunks.length;i++){
+        setStatus('Teil '+(i+1)+' von '+chunks.length+'...','active');
+        parts.push(await callClaude('Fasse diesen Textabschnitt (Teil '+(i+1)+' von '+chunks.length+') auf Deutsch zusammen. Nur die Zusammenfassung.\n\nText:\n'+chunks[i]));
+      }
+      setStatus('Konsolidiere...','active');
+      final=await callClaude('Erstelle aus diesen Teilzusammenfassungen eine einheitliche '+labels[type]+' auf Deutsch. Nur die Zusammenfassung.\n\n'+parts.join('\n\n---\n\n'));
+      document.getElementById('chunk-note').textContent='Dokument in '+chunks.length+' Abschnitte aufgeteilt und konsolidiert';
+    }
+    summaryText=final;
+    document.getElementById('summary-output').textContent=summaryText;
+    document.getElementById('result-area').style.display='block';
+    document.getElementById('dl-btn').disabled=false;
+    setStatus('Fertig','done');
+    document.getElementById('result-area').scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(err){setStatus('Fehler aufgetreten');console.error(err);}
+  btn.disabled=false;
+  btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v1m0 16v1M4.22 4.22l.7.7m12.16 12.16.7.7M3 12h1m16 0h1M4.22 19.78l.7-.7M18.36 5.64l.7-.7"/><circle cx="12" cy="12" r="4"/></svg>Zusammenfassung generieren';
+}
+function downloadPDF(){
+  if(!summaryText)return;
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const margin=22,pw=210,cw=pw-margin*2;
+  const today=new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'long',year:'numeric'});
+  const title=document.getElementById('doc-title').value||'Zusammenfassung';
+  const sel=document.getElementById('summary-type');
+  const typeLabel=sel.options[sel.selectedIndex].text;
+  doc.setFillColor(15,14,12);doc.rect(0,0,210,48,'F');
+  doc.setFillColor(45,97,71);doc.rect(0,0,5,48,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(19);doc.setTextColor(250,248,243);doc.text(title,margin,21);
+  doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(154,152,148);doc.text(typeLabel+' · '+today,margin,31);
+  doc.setFillColor(45,97,71);doc.rect(margin,40,cw,0.5,'F');
+  doc.setFont('helvetica','normal');doc.setFontSize(10.5);doc.setTextColor(15,14,12);
+  const lines=doc.splitTextToSize(summaryText,cw);
+  let y=56,lh=6,ph=297,bm=22;
+  for(let i=0;i<lines.length;i++){
+    if(y+lh>ph-bm){
+      doc.addPage();
+      doc.setFillColor(243,240,232);doc.rect(0,0,210,13,'F');
+      doc.setFontSize(7.5);doc.setTextColor(154,152,148);doc.text(title,margin,8.5);
+      doc.setFontSize(10.5);doc.setTextColor(15,14,12);y=22;
+    }
+    doc.text(lines[i],margin,y);y+=lh;
+  }
+  const total=doc.internal.getNumberOfPages();
+  for(let p=1;p<=total;p++){
+    doc.setPage(p);
+    doc.setFillColor(236,232,221);doc.rect(0,ph-11,210,11,'F');
+    doc.setFontSize(7.5);doc.setTextColor(154,152,148);
+    doc.text('Seite '+p+' von '+total,pw-margin,ph-4.5,{align:'right'});
+    doc.text('Notizen Zusammenfasser',margin,ph-4.5);
+  }
+  doc.save(title.replace(/\s+/g,'_')+'_Zusammenfassung.pdf');
+  setStatus('PDF gespeichert','done');
+}
+function removeFile(){
+  notesInput.value='';summaryText='';extractedPages=0;
+  document.getElementById('word-count').textContent='—';
+  document.getElementById('char-count').textContent='—';
+  document.getElementById('file-badge').style.display='none';
+  document.getElementById('file-hint').textContent='PDF, DOCX, TXT, MD — bis zu 200 MB';
+  document.getElementById('file-input').value='';
+  hideProgress();setStatus('Bereit');
+}
+function clearAll(){
+  notesInput.value='';summaryText='';extractedPages=0;
+  document.getElementById('word-count').textContent='—';
+  document.getElementById('char-count').textContent='—';
+  document.getElementById('result-area').style.display='none';
+  document.getElementById('file-badge').style.display='none';
+  document.getElementById('file-hint').textContent='PDF, DOCX, TXT, MD — bis zu 200 MB';
+  document.getElementById('dl-btn').disabled=true;
+  document.getElementById('doc-title').value='';
+  document.getElementById('chunk-note').textContent='';
+  hideProgress();setStatus('Bereit');
+}
+</script>
+</body>
+</html>
