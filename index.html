@@ -231,9 +231,9 @@ function chunkText(text,max){
   return chunks;
 }
 async function callClaude(prompt){
-  const res=await fetch('https://api.anthropic.com/v1/messages',{
+  const res=await fetch('https://notizen-api.vercel.app/api/summarize',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:prompt}]})
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:prompt}]}),
   });
   return (await res.json()).content[0].text;
 }
