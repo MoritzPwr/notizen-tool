@@ -122,6 +122,10 @@ footer{text-align:center;padding:2rem 1.25rem;font-size:0.75rem;color:var(--ink3
         </select>
       </div>
     </div>
+    <div style="margin-bottom:1.5rem;">
+      <label for="custom-focus">Fokus & Anweisungen <span style="font-weight:400;color:var(--ink3)">(optional)</span></label>
+      <input type="text" id="custom-focus" placeholder="z.B. Fokus auf Risiken · nur Definitionen · Perspektive eines Investors · für Nicht-Fachleute erklären">
+    </div>
     <label for="notes-input">Notizen einfügen</label>
     <textarea id="notes-input" placeholder="Text hier direkt einfügen..."></textarea>
     <div class="divider">oder Datei hochladen</div>
@@ -201,7 +205,10 @@ async function handleFile(file){
     if(ext==='pdf')text=await extractPDF(file);
     else if(ext==='docx')text=await extractDocx(file);
     else text=await file.text();
-    notesInput.value=text;updateCounts();hideProgress();
+    fileText=text;
+    const wc=text.trim().split(/\s+/).filter(w=>w).length;
+    document.getElementById('word-count').textContent=wc.toLocaleString('de-DE');
+    document.getElementById('char-count').textContent=text.length.toLocaleString('de-DE');hideProgress();
     const kb=Math.round(file.size/1024);
     const detail=extractedPages?extractedPages+' Seiten':text.split(/\s+/).filter(w=>w).length.toLocaleString('de-DE')+' Wörter';
     document.getElementById('file-badge-text').textContent=file.name+' · '+(kb<1024?kb+' KB':Math.round(kb/1024)+' MB')+' · '+detail;
@@ -245,10 +252,12 @@ async function callClaude(prompt){
   return (await res.json()).content[0].text;
 }
 async function generateSummary(){
-  const text=notesInput.value.trim();
+  const text=(fileText||notesInput.value).trim();
   if(!text){setStatus('Kein Text vorhanden');return;}
   const type=document.getElementById('summary-type').value;
   const labels={executive:'prägnante Kurzfassung (3-5 Sätze Fließtext, professioneller Ton, keine Überschriften)',bullet:'strukturierte Stichpunkt-Zusammenfassung (gegliedert nach Themen mit Überschriften, darunter klare Stichpunkte)',detailed:'ausführliche Zusammenfassung (vollständig, gegliedert in thematische Abschnitte mit Überschriften und erklärendem Fließtext)',action:'Aufgabenliste (gruppiert nach Bereich mit Überschriften, darunter konkrete To-Dos als Stichpunkte)',study:'Lernzusammenfassung (gegliedert nach Themen mit Überschriften; pro Thema Kernkonzepte, Definitionen und prüfungsrelevante Punkte)'};
+  const customFocus=document.getElementById('custom-focus').value.trim();
+  const focusRule=customFocus?'\n\nBESONDERER FOKUS: '+customFocus:'';
   const formatRule='\n\nFORMAT-REGELN: Nutze für Überschriften das Format "## Überschrift" und für Unterüberschriften "### Unterüberschrift". Wichtige Begriffe mit **fett** markieren. Aufzählungen mit "- " beginnen. Schreibe sauber und übersichtlich auf Deutsch.';
   const btn=document.getElementById('gen-btn');
   btn.disabled=true;btn.innerHTML='<span class="loader"></span> Generiere...';
@@ -257,7 +266,7 @@ async function generateSummary(){
     let final='';
     if(chunks.length===1){
       setStatus('Analysiere...','active');
-      final=await callClaude('Erstelle eine '+labels[type]+' der folgenden Notizen. Antworte NUR mit der Zusammenfassung, ohne Einleitung wie "Hier ist...".'+formatRule+'\n\nNotizen:\n'+text);
+      final=await callClaude('Erstelle eine '+labels[type]+' der folgenden Notizen. Antworte NUR mit der Zusammenfassung, ohne Einleitung wie "Hier ist...".'+focusRule+formatRule+'\n\nNotizen:\n'+text);
       document.getElementById('chunk-note').textContent='';
     }else{
       const parts=[];
@@ -266,7 +275,7 @@ async function generateSummary(){
         parts.push(await callClaude('Fasse diesen Textabschnitt (Teil '+(i+1)+' von '+chunks.length+') auf Deutsch zusammen. Erfasse alle wichtigen Punkte vollständig. Nur die Zusammenfassung, kein Vorwort.\n\nText:\n'+chunks[i]));
       }
       setStatus('Konsolidiere...','active');
-      final=await callClaude('Erstelle aus diesen Teilzusammenfassungen eine einheitliche, gut strukturierte '+labels[type]+'. Vermeide Wiederholungen, fasse zusammengehörige Themen sinnvoll zusammen. Nur die finale Zusammenfassung, kein Vorwort.'+formatRule+'\n\n'+parts.join('\n\n---\n\n'));
+      final=await callClaude('Erstelle aus diesen Teilzusammenfassungen eine einheitliche, gut strukturierte '+labels[type]+'. Vermeide Wiederholungen, fasse zusammengehörige Themen sinnvoll zusammen. Nur die finale Zusammenfassung, kein Vorwort.'+focusRule+formatRule+'\n\n'+parts.join('\n\n'));
       document.getElementById('chunk-note').textContent='Dokument in '+chunks.length+' Abschnitte aufgeteilt und konsolidiert';
     }
     summaryText=final;
@@ -354,16 +363,16 @@ function downloadPDF(){
 }
 function stripMd(s){return s.replace(/\*\*(.+?)\*\*/g,'$1').replace(/\*(.+?)\*/g,'$1');}
 function removeFile(){
-  notesInput.value='';summaryText='';extractedPages=0;
-  document.getElementById('word-count').textContent='—';
-  document.getElementById('char-count').textContent='—';
+  fileText='';extractedPages=0;
+  document.getElementById('word-count').textContent=notesInput.value.trim()?notesInput.value.trim().split(/\s+/).filter(w=>w).length.toLocaleString('de-DE'):'—';
+  document.getElementById('char-count').textContent=notesInput.value.length?notesInput.value.length.toLocaleString('de-DE'):'—';
   document.getElementById('file-badge').style.display='none';
   document.getElementById('file-hint').textContent='PDF, DOCX, TXT, MD — bis zu 200 MB';
   document.getElementById('file-input').value='';
   hideProgress();setStatus('Bereit');
 }
 function clearAll(){
-  notesInput.value='';summaryText='';extractedPages=0;
+  notesInput.value='';summaryText='';extractedPages=0;fileText='';
   document.getElementById('word-count').textContent='—';
   document.getElementById('char-count').textContent='—';
   document.getElementById('result-area').style.display='none';
@@ -371,6 +380,7 @@ function clearAll(){
   document.getElementById('file-hint').textContent='PDF, DOCX, TXT, MD — bis zu 200 MB';
   document.getElementById('dl-btn').disabled=true;
   document.getElementById('doc-title').value='';
+  document.getElementById('custom-focus').value='';
   document.getElementById('chunk-note').textContent='';
   hideProgress();setStatus('Bereit');
 }
