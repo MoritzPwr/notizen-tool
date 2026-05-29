@@ -76,6 +76,12 @@ button:active:not(:disabled){transform:scale(0.98);}
 #summary-output li{margin-bottom:0.35rem;}
 #summary-output strong{font-weight:500;color:var(--ink);}
 .chunk-note{font-size:0.74rem;color:var(--ink3);margin-top:12px;text-align:right;}
+.history-item{padding:0.75rem 0.875rem;border:0.5px solid var(--border);border-radius:var(--r);margin-bottom:8px;cursor:pointer;transition:all 0.12s;background:var(--cream);}
+.history-item:last-child{margin-bottom:0;}
+.history-item:hover{background:var(--accent-light);border-color:var(--accent2);}
+.history-meta{display:flex;justify-content:space-between;align-items:center;gap:1rem;}
+.history-title{font-size:0.875rem;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.history-date{font-size:0.72rem;color:var(--ink3);white-space:nowrap;flex-shrink:0;}
 .status-pill{display:inline-flex;align-items:center;gap:5px;font-size:0.72rem;font-weight:500;letter-spacing:0.06em;padding:3px 10px;border-radius:999px;background:var(--paper2);color:var(--ink2);}
 .status-pill.active{background:var(--accent-light);color:var(--accent);}
 .status-pill.done{background:#e8f5ee;color:#1a6640;}
@@ -122,9 +128,31 @@ footer{text-align:center;padding:2rem 1.25rem;font-size:0.75rem;color:var(--ink3
         </select>
       </div>
     </div>
-    <div style="margin-bottom:1.5rem;">
-      <label for="custom-focus">Fokus & Anweisungen <span style="font-weight:400;color:var(--ink3)">(optional)</span></label>
-      <input type="text" id="custom-focus" placeholder="z.B. Fokus auf Risiken · nur Definitionen · Perspektive eines Investors · für Nicht-Fachleute erklären">
+    <div class="form-row">
+      <div>
+        <label for="output-lang">Ausgabesprache</label>
+        <select id="output-lang">
+          <option value="Deutsch">Deutsch</option>
+          <option value="Englisch">Englisch / English</option>
+          <option value="Französisch">Französisch / Français</option>
+          <option value="Spanisch">Spanisch / Español</option>
+          <option value="" disabled>──────────</option>
+          <option value="Italienisch">Italienisch / Italiano</option>
+          <option value="Niederländisch">Niederländisch / Nederlands</option>
+          <option value="Portugiesisch">Portugiesisch / Português</option>
+          <option value="Polnisch">Polnisch / Polski</option>
+          <option value="Russisch">Russisch / Русский</option>
+          <option value="Türkisch">Türkisch / Türkçe</option>
+          <option value="Arabisch">Arabisch / العربية</option>
+          <option value="Chinesisch">Chinesisch / 中文</option>
+          <option value="Japanisch">Japanisch / 日本語</option>
+          <option value="Koreanisch">Koreanisch / 한국어</option>
+        </select>
+      </div>
+      <div>
+        <label for="custom-focus">Fokus & Anweisungen <span style="font-weight:400;color:var(--ink3)">(optional)</span></label>
+        <input type="text" id="custom-focus" placeholder="z.B. Fokus auf Risiken · für Nicht-Fachleute">
+      </div>
     </div>
     <label for="notes-input">Notizen einfügen</label>
     <textarea id="notes-input" placeholder="Text hier direkt einfügen..."></textarea>
@@ -166,13 +194,30 @@ footer{text-align:center;padding:2rem 1.25rem;font-size:0.75rem;color:var(--ink3
   <div class="card" id="result-area" style="display:none;">
     <div class="result-header">
       <span class="result-title">Zusammenfassung</span>
-      <button class="btn-sm" onclick="clearAll()">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
-        Neu starten
-      </button>
+      <div style="display:flex;gap:6px;">
+        <button class="btn-sm" onclick="copySummary()" id="copy-btn">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Kopieren
+        </button>
+        <button class="btn-sm" onclick="clearAll()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
+          Neu starten
+        </button>
+      </div>
     </div>
     <div id="summary-output"></div>
     <div class="chunk-note" id="chunk-note"></div>
+  </div>
+
+  <div class="card" id="history-card" style="display:none;">
+    <div class="result-header">
+      <span class="result-title">Verlauf</span>
+      <button class="btn-sm" onclick="clearHistory()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        Leeren
+      </button>
+    </div>
+    <div id="history-list"></div>
   </div>
 </main>
 <footer>Inhalte werden ausschließlich zur Verarbeitung an Claude AI übermittelt &mdash; keine Speicherung, keine Weitergabe.</footer>
@@ -257,8 +302,9 @@ async function generateSummary(){
   const type=document.getElementById('summary-type').value;
   const labels={executive:'prägnante Kurzfassung (3-5 Sätze Fließtext, professioneller Ton, keine Überschriften)',bullet:'strukturierte Stichpunkt-Zusammenfassung (gegliedert nach Themen mit Überschriften, darunter klare Stichpunkte)',detailed:'ausführliche Zusammenfassung (vollständig, gegliedert in thematische Abschnitte mit Überschriften und erklärendem Fließtext)',action:'Aufgabenliste (gruppiert nach Bereich mit Überschriften, darunter konkrete To-Dos als Stichpunkte)',study:'Lernzusammenfassung (gegliedert nach Themen mit Überschriften; pro Thema Kernkonzepte, Definitionen und prüfungsrelevante Punkte)'};
   const customFocus=document.getElementById('custom-focus').value.trim();
+  const outLang=document.getElementById('output-lang').value||'Deutsch';
   const focusRule=customFocus?'\n\nBESONDERER FOKUS: '+customFocus:'';
-  const formatRule='\n\nFORMAT-REGELN: Nutze für Überschriften das Format "## Überschrift" und für Unterüberschriften "### Unterüberschrift". Wichtige Begriffe mit **fett** markieren. Aufzählungen mit "- " beginnen. Schreibe sauber und übersichtlich auf Deutsch.';
+  const formatRule='\n\nFORMAT-REGELN: Schreibe die gesamte Ausgabe auf '+outLang+', unabhängig von der Sprache des Originaltextes. Nutze für Überschriften das Format "## Überschrift" und für Unterüberschriften "### Unterüberschrift". Wichtige Begriffe mit **fett** markieren. Aufzählungen mit "- " beginnen. Schreibe sauber und übersichtlich.';
   const btn=document.getElementById('gen-btn');
   btn.disabled=true;btn.innerHTML='<span class="loader"></span> Generiere...';
   const chunks=chunkText(text,MAX_CHUNK);
@@ -283,6 +329,7 @@ async function generateSummary(){
     document.getElementById('result-area').style.display='block';
     document.getElementById('dl-btn').disabled=false;
     setStatus('Fertig','done');
+    saveToHistory(document.getElementById('doc-title').value.trim()||'Ohne Titel',summaryText);
     document.getElementById('result-area').scrollIntoView({behavior:'smooth',block:'start'});
   }catch(err){setStatus('Fehler aufgetreten');console.error(err);}
   btn.disabled=false;
@@ -371,6 +418,59 @@ function removeFile(){
   document.getElementById('file-input').value='';
   hideProgress();setStatus('Bereit');
 }
+function copySummary(){
+  if(!summaryText)return;
+  navigator.clipboard.writeText(summaryText).then(()=>{
+    const b=document.getElementById('copy-btn');
+    const orig=b.innerHTML;
+    b.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Kopiert';
+    setTimeout(()=>{b.innerHTML=orig;},1800);
+  });
+}
+const HKEY='notizen_verlauf';
+function saveToHistory(title,text){
+  try{
+    let hist=JSON.parse(localStorage.getItem(HKEY)||'[]');
+    hist.unshift({title:title,text:text,date:new Date().toISOString()});
+    hist=hist.slice(0,5);
+    localStorage.setItem(HKEY,JSON.stringify(hist));
+    renderHistory();
+  }catch(e){}
+}
+function renderHistory(){
+  let hist=[];
+  try{hist=JSON.parse(localStorage.getItem(HKEY)||'[]');}catch(e){}
+  const card=document.getElementById('history-card');
+  const list=document.getElementById('history-list');
+  if(!hist.length){card.style.display='none';return;}
+  card.style.display='block';
+  list.innerHTML='';
+  hist.forEach((h,i)=>{
+    const d=new Date(h.date);
+    const dateStr=d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'})+' · '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    const item=document.createElement('div');
+    item.className='history-item';
+    item.innerHTML='<div class="history-meta"><span class="history-title">'+h.title.replace(/</g,'&lt;')+'</span><span class="history-date">'+dateStr+'</span></div>';
+    item.onclick=()=>loadHistory(i);
+    list.appendChild(item);
+  });
+}
+function loadHistory(i){
+  let hist=[];
+  try{hist=JSON.parse(localStorage.getItem(HKEY)||'[]');}catch(e){}
+  if(!hist[i])return;
+  summaryText=hist[i].text;
+  document.getElementById('doc-title').value=hist[i].title==='Ohne Titel'?'':hist[i].title;
+  document.getElementById('summary-output').innerHTML=renderMarkdown(summaryText);
+  document.getElementById('result-area').style.display='block';
+  document.getElementById('dl-btn').disabled=false;
+  document.getElementById('chunk-note').textContent='Aus Verlauf geladen';
+  document.getElementById('result-area').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function clearHistory(){
+  localStorage.removeItem(HKEY);
+  renderHistory();
+}
 function clearAll(){
   notesInput.value='';summaryText='';extractedPages=0;fileText='';
   document.getElementById('word-count').textContent='—';
@@ -384,6 +484,7 @@ function clearAll(){
   document.getElementById('chunk-note').textContent='';
   hideProgress();setStatus('Bereit');
 }
+renderHistory();
 </script>
 </body>
 </html>
